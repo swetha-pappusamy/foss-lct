@@ -1,0 +1,497 @@
+npm install -g @vue/cli
+
+
+vue create vue-image-gallery
+
+
+cd vue-image-gallery
+
+
+npm install vue-easy-lightbox
+
+
+To Run→ npm run serve
+
+
+src/components→ImageGallery.vue
+
+
+<template>
+
+  <div class="gallery-container">
+
+    <!-- Image Upload Section -->
+
+    <div class="upload-section">
+
+      <input type="file" @change="handleFileUpload" />
+
+      <input
+
+        type="text"
+
+        v-model="newImageAlt"
+
+        placeholder="Enter image description"
+
+      />
+
+      <select v-model="newImageCategory">
+
+        <option v-for="category in categories" :key="category" :value="category">
+
+          {{ category }}
+
+        </option>
+
+        <option value="new">New Category</option>
+
+      </select>
+
+      <input
+
+        v-if="newImageCategory === 'new'"
+
+        type="text"
+
+        v-model="newCategoryName"
+
+        placeholder="Enter new category name"
+
+      />
+
+      <button @click="addImage">Add Image</button>
+
+    </div>
+
+
+    <!-- Category Filter Buttons -->
+
+    <div class="category-buttons">
+
+      <button
+
+        v-for="category in categories"
+
+        :key="category"
+
+        :class="{ active: selectedCategory === category }"
+
+        @click="setCategory(category)"
+
+      >
+
+        {{ category }}
+
+      </button>
+
+    </div>
+
+
+    <!-- Image Grid -->
+
+    <div class="image-grid">
+
+      <div
+
+        v-for="(image, index) in filteredImages"
+
+        :key="index"
+
+        class="image-item"
+
+      >
+
+        <img :src="image.src" :alt="image.alt" @click="openLightbox(index)" />
+
+        <button class="delete-button" @click="deleteImage(index)">Delete</button>
+
+      </div>
+
+    </div>
+
+
+    <!-- Lightbox with Description -->
+
+    <vue-easy-lightbox
+
+      :visible="visible"
+
+      :imgs="images.map(img => img.src)"
+
+      :index="selectedIndex"
+
+      @hide="visible = false"
+
+    >
+
+      <div class="lightbox-content">
+
+        <img :src="images[selectedIndex]?.src" :alt="images[selectedIndex]?.alt" class="lightbox-image" />
+
+        <div class="lightbox-description">
+
+          <p>{{ images[selectedIndex]?.alt }}</p>
+
+        </div>
+
+      </div>
+
+    </vue-easy-lightbox>
+
+  </div>
+
+</template>
+
+
+<script>
+
+import VueEasyLightbox from 'vue-easy-lightbox';
+
+
+export default {
+
+  name: 'ImageGallery',
+
+  components: { VueEasyLightbox },
+
+  data() {
+
+    return {
+
+      images: [],
+
+      selectedCategory: 'all',
+
+      visible: false,
+
+      selectedIndex: 0,
+
+      newImageFile: null,
+
+      newImageAlt: '',
+
+      newImageCategory: 'all',
+
+      newCategoryName: ''
+
+    };
+
+  },
+
+  computed: {
+
+    filteredImages() {
+
+      if (this.selectedCategory === 'all') {
+
+        return this.images;
+
+      }
+
+      return this.images.filter(image => image.category === this.selectedCategory);
+
+    },
+
+    categories() {
+
+      const categories = new Set(this.images.map(img => img.category));
+
+      return ['all', ...categories];
+
+    }
+
+  },
+
+  methods: {
+
+    openLightbox(index) {
+
+      this.selectedIndex = index;
+
+      this.visible = true;
+
+    },
+
+    setCategory(category) {
+
+      this.selectedCategory = category;
+
+    },
+
+    handleFileUpload(event) {
+
+      this.newImageFile = event.target.files[0];
+
+    },
+
+    addImage() {
+
+      if (!this.newImageFile) {
+
+        alert('Please upload an image file');
+
+        return;
+
+      }
+
+
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+
+        const newImageSrc = e.target.result;
+
+        const category = this.newImageCategory === 'new' ? this.newCategoryName : this.newImageCategory;
+
+
+        this.images.push({
+
+          src: newImageSrc,
+
+          alt: this.newImageAlt || 'New Image',
+
+          category: category || 'Uncategorized'
+
+        });
+
+
+        // Reset form
+
+        this.newImageFile = null;
+
+        this.newImageAlt = '';
+
+        this.newImageCategory = 'all';
+
+        this.newCategoryName = '';
+
+      };
+
+
+      reader.readAsDataURL(this.newImageFile);
+
+    },
+
+    deleteImage(index) {
+
+      this.images.splice(index, 1);
+
+    }
+
+  }
+
+};
+
+</script>
+
+
+<style scoped>
+
+.gallery-container {
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+}
+
+.upload-section {
+
+  margin-bottom: 20px;
+
+}
+
+.image-grid {
+
+  display: grid;
+
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+
+  gap: 10px;
+
+}
+
+.image-item {
+
+  position: relative;
+
+  cursor: pointer;
+
+}
+
+.image-item img {
+
+  width: 100%;
+
+  height: auto;
+
+  border-radius: 8px;
+
+  transition: transform 0.2s;
+
+}
+
+.image-item:hover img {
+
+  transform: scale(1.05);
+
+}
+
+.delete-button {
+
+  position: absolute;
+
+  top: 5px;
+
+  right: 5px;
+
+  background-color: red;
+
+  color: white;
+
+  border: none;
+
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  padding: 5px;
+
+  font-size: 14px;
+
+}
+
+.category-buttons {
+
+  margin-bottom: 20px;
+
+}
+
+.category-buttons button {
+
+  padding: 10px;
+
+  margin: 0 5px;
+
+  border: none;
+
+  background-color: #333;
+
+  color: white;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s;
+
+}
+
+.category-buttons button.active {
+
+  background-color: #555;
+
+}
+
+.category-buttons button:hover {
+
+  background-color: #777;
+
+}
+
+
+/* Lightbox Styling */
+
+.lightbox-content {
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  align-items: center;
+
+}
+
+
+.lightbox-image {
+
+  max-width: 90%;
+
+  max-height: 80vh;
+
+  margin-bottom: 20px;
+
+}
+
+.lightbox-description {
+
+  color: #fff;
+
+  background-color: rgba(0, 0, 0, 0.7);
+
+  padding: 10px;
+
+  border-radius: 8px;
+
+  text-align: center;
+
+  font-size: 1.2em;
+
+  width: 90%;
+
+  max-width: 500px;
+
+}
+
+</style>
+
+
+src/components→App.vue
+
+
+<template>
+
+  <div id="app">
+
+    <ImageGallery />
+
+  </div>
+
+</template>
+
+<script>
+
+import ImageGallery from './components/ImageGallery.vue';
+
+export default {
+
+  name: 'App',
+
+  components: {
+
+    ImageGallery
+
+  }
+
+};
+
+</script>
+
+<style>
+
+#app {
+
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+
+  text-align: center;
+
+  color: #2c3e50;
+
+  margin-top: 60px;
+
+}
+
+</style>
